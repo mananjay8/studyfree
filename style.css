@@ -1,0 +1,213 @@
+// ===== Quiz Questions Data =====
+// Add or edit questions here. Each question needs:
+// - question: the question text
+// - options: array of 4 answer choices
+// - correct: index (0-3) of the correct answer
+// - explanation: shown after answering
+const QUESTIONS = [
+  {
+    question: "HTML ka full form kya hai?",
+    options: [
+      "Hyper Text Markup Language",
+      "High Text Machine Language",
+      "Hyper Tabular Markup Language",
+      "None of these"
+    ],
+    correct: 0,
+    explanation:
+      "HTML ka full form 'Hyper Text Markup Language' hai. Yeh web pages banane ke liye use hoti hai."
+  },
+  {
+    question: "CSS ka use kis liye kiya jata hai?",
+    options: [
+      "Website ko design karne ke liye",
+      "Database banane ke liye",
+      "Server chalane ke liye",
+      "Code compile karne ke liye"
+    ],
+    correct: 0,
+    explanation:
+      "CSS (Cascading Style Sheets) ka use web pages ki styling aur layout design karne ke liye hota hai."
+  },
+  {
+    question: "JavaScript mein variable declare karne ke liye kaunsa keyword use nahi hota?",
+    options: ["var", "let", "const", "int"],
+    correct: 3,
+    explanation:
+      "'int' JavaScript mein keyword nahi hai. JavaScript mein 'var', 'let' aur 'const' use hote hain."
+  },
+  {
+    question: "Kaunsa tag sabse bada heading banata hai?",
+    options: ["<h6>", "<h1>", "<head>", "<heading>"],
+    correct: 1,
+    explanation:
+      "<h1> sabse bada heading tag hai. <h6> sabse chhota hota hai."
+  },
+  {
+    question: "React.js kis company ne banaya tha?",
+    options: ["Google", "Microsoft", "Facebook (Meta)", "Amazon"],
+    correct: 2,
+    explanation:
+      "React.js ko Facebook (ab Meta) ne banaya tha aur 2013 mein open-source kiya gaya."
+  }
+];
+
+// ===== DOM Elements =====
+const questionNumberEl = document.getElementById("questionNumber");
+const scoreEl = document.getElementById("score");
+const questionEl = document.getElementById("question");
+const optionsEl = document.getElementById("options");
+const explanationEl = document.getElementById("explanation");
+const nextBtn = document.getElementById("nextBtn");
+const quizInfoEl = document.getElementById("quizInfo");
+
+// ===== State =====
+let currentIndex = 0;
+let score = 0;
+let answered = false;
+
+// ===== Utility: Shuffle array (Fisher-Yates) =====
+function shuffle(arr) {
+  const a = [...arr];
+  for (let i = a.length - 1; i > 0; i--) {
+    const j = Math.floor(Math.random() * (i + 1));
+    [a[i], a[j]] = [a[j], a[i]];
+  }
+  return a;
+}
+
+// Shuffle questions & options on load
+let quizData = [];
+
+function prepareQuiz() {
+  quizData = shuffle(QUESTIONS).map((q) => {
+    // Shuffle options while tracking correct answer
+    const correctText = q.options[q.correct];
+    const shuffledOptions = shuffle(q.options);
+    return {
+      question: q.question,
+      options: shuffledOptions,
+      correct: shuffledOptions.indexOf(correctText),
+      explanation: q.explanation
+    };
+  });
+}
+
+// ===== Render current question =====
+function loadQuestion() {
+  answered = false;
+  const q = quizData[currentIndex];
+
+  // Update header info
+  questionNumberEl.textContent = `Question ${currentIndex + 1} / ${quizData.length}`;
+  scoreEl.textContent = `Score: ${score}`;
+  quizInfoEl.textContent = `Practice Quiz • ${quizData.length} Questions`;
+
+  // Question text
+  questionEl.textContent = q.question;
+
+  // Build options
+  optionsEl.innerHTML = "";
+  q.options.forEach((optionText, index) => {
+    const btn = document.createElement("button");
+    btn.classList.add("option");
+    btn.textContent = optionText;
+    btn.addEventListener("click", () => selectAnswer(index, btn));
+    optionsEl.appendChild(btn);
+  });
+
+  // Reset explanation & next button
+  explanationEl.style.display = "none";
+  explanationEl.textContent = "";
+  nextBtn.hidden = true;
+  nextBtn.textContent =
+    currentIndex === quizData.length - 1 ? "Finish Quiz" : "Next Question";
+}
+
+// ===== Handle answer selection =====
+function selectAnswer(selectedIndex, selectedBtn) {
+  if (answered) return; // prevent multiple clicks
+  answered = true;
+
+  const q = quizData[currentIndex];
+  const allOptions = optionsEl.querySelectorAll(".option");
+
+  // Highlight correct & wrong answers
+  allOptions.forEach((btn, idx) => {
+    btn.disabled = true;
+    if (idx === q.correct) {
+      btn.classList.add("correct");
+    } else if (idx === selectedIndex) {
+      btn.classList.add("wrong");
+    }
+  });
+
+  // Update score
+  if (selectedIndex === q.correct) {
+    score++;
+    scoreEl.textContent = `Score: ${score}`;
+  }
+
+  // Show explanation
+  explanationEl.innerHTML = `<strong>${
+    selectedIndex === q.correct ? "✅ Sahi jawab!" : "❌ Galat jawab"
+  }</strong><br>${q.explanation}`;
+  explanationEl.style.display = "block";
+
+  // Show next button
+  nextBtn.hidden = false;
+}
+
+// ===== Go to next question or finish =====
+function handleNext() {
+  if (currentIndex < quizData.length - 1) {
+    currentIndex++;
+    loadQuestion();
+  } else {
+    showResult();
+  }
+}
+
+// ===== Show final result screen =====
+function showResult() {
+  const total = quizData.length;
+  const percentage = Math.round((score / total) * 100);
+
+  let message = "";
+  if (percentage === 100) message = "🏆 Perfect score! Zabardast!";
+  else if (percentage >= 80) message = "🌟 Excellent! Bahut accha kiya!";
+  else if (percentage >= 60) message = "👍 Good job! Thodi aur practice karo.";
+  else if (percentage >= 40) message = "📖 Not bad, but keep studying!";
+  else message = "💪 Don't worry — practice makes perfect!";
+
+  // Replace quiz card content with result
+  document.querySelector(".quiz-card").innerHTML = `
+    <div class="result">
+      <h2>Quiz Complete! 🎉</h2>
+      <p class="result-score">${score} / ${total}</p>
+      <p class="result-percentage">${percentage}%</p>
+      <p class="result-message">${message}</p>
+      <button id="restartBtn" class="next-btn">Restart Quiz</button>
+    </div>
+  `;
+
+  // Restart button
+  document.getElementById("restartBtn").addEventListener("click", restartQuiz);
+}
+
+// ===== Restart quiz =====
+function restartQuiz() {
+  // Reload original HTML structure (simplest way to restore quiz UI)
+  location.reload();
+}
+
+// ===== Event Listeners =====
+nextBtn.addEventListener("click", handleNext);
+
+// ===== Initialize =====
+function init() {
+  prepareQuiz();
+  loadQuestion();
+}
+
+init();
